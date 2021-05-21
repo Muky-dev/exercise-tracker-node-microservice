@@ -3,7 +3,8 @@ import * as controller from '../controller/root.js';
 
 const router = express.Router();
 
-router.get('/', controller.getIndex);
 router.post('/api/users', controller.postUser);
+router.post('/api/users/:_id/exercises', controller.postExercise);
+router.get('/api/users/:_id/logs', controller.getExercises);
 
 export default router;
