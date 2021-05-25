@@ -1,12 +1,13 @@
 import User from '../models/User.js';
 import Exercise from '../models/Exercise.js';
 
+// POST New User
 export async function postUser(req, res) {
     const username = req.body.username;
 
     try {
-        const newUser = await new User({username: username}).save();
-        res.json({ username: username , _id: newUser._id});
+        const newUser = await new User({ username: username }).save();
+        res.json({ username: username, _id: newUser._id });
     } catch (error) {
         if (error.code == 11000) {
             res.send("Username already taken");
@@ -16,56 +17,78 @@ export async function postUser(req, res) {
     }
 }
 
+// POST New singleExercise
 export async function postExercise(req, res) {
     const id = req.params._id;
     const description = req.body.description;
     const duration = req.body.duration;
     const date = req.body.date;
 
-    const formatedDate = await formatDate(date);
+    let formatedDate = new Date(Date.now());
+
+    if (date) {
+        try {
+            const newDate = new Date(date+"T01:00:00");
+            formatedDate = newDate;
+        } catch (error) {
+            formatedDate = error
+        }
+    }
 
     try {
-        const findUser = await User.findOne({_id: id});
+        const findUser = await User.findOne({ _id: id });
         const newExercise = await new Exercise({
             user: findUser._id,
-            date: formatedDate,
+            description: description,
             duration: duration,
-            description: description
+            date: formatedDate
         }).save();
-        res.json(newExercise);
+        console.log(newExercise);
+        res.json({
+            _id: newExercise._id,
+            username: findUser.username,
+            date: new Date(newExercise.date).toDateString(),
+            duration: newExercise.duration,
+            description: newExercise.description
+        });
     } catch (error) {
         res.json(error);
     }
 }
 
-// Validate Date function
-async function formatDate(date) {
-    const hifenSpace = date.split('-');
-    const blankSpace = date.split(' ');
-    console.log(hifenSpace, blankSpace);
-    if (hifenSpace.length > 1) {
-        try {
-            const newDate = new Date(hifenSpace[0], hifenSpace[1]-1, hifenSpace[2]).toDateString();
-            return newDate;
-        } catch (error) {
-            return error
-        }
-    } else if (blankSpace.length > 1) {
-        try {
-            const newDate = new Date(blankSpace[0], blankSpace[1]-1, blankSpace[2]).toDateString();
-            return newDate;
-        } catch (error) {
-            return error
-        }
-    } else {
-        return new Date(Date.now()).toDateString();
-    }
-    
-}
-
+// GET singleExercise count
 export async function getExercises(req, res) {
     const id = req.params._id;
-    const fromQuery = req.query.from;
-    const toQuery = req.query.to;
-    const limit = req.query.limit;
+    let fromQuery = req.query.from;
+    let toQuery = req.query.to;
+    let limit = req.query.limit;
+    let count = 0
+
+    try {
+        let Query = { user: id }
+        if (fromQuery || toQuery) { Query.date = {} }
+        if (fromQuery) { Query.date.$gte = new Date(fromQuery).toDateString() }
+        if (toQuery) { Query.date.$lte = new Date(toQuery).toDateString() }
+
+        const findUser = await User.findOne({ _id: id });
+        const singleExercise = await Exercise.find(Query).sort({ date: -1 });
+        const ExerciseObj = {
+            _id: findUser._id,
+            username: findUser.username,
+            count: count,
+            log: []
+        };
+        if (limit > singleExercise.length || !limit) { limit = singleExercise.length }
+        for (let i = 0; i < limit; i++) {
+            ExerciseObj.count = i + 1;
+            ExerciseObj.log.push({
+                description: singleExercise[i].description,
+                duration: singleExercise[i].duration,
+                date: new Date(singleExercise[i].date).toDateString()
+            });
+        }
+        res.json(ExerciseObj);
+    } catch (error) {
+        res.json(error.message);
+    }
 }
