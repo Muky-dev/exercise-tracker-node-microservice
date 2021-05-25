@@ -1,6 +1,11 @@
 import User from '../models/User.js';
 import Exercise from '../models/Exercise.js';
 
+export async function getAllUsers(req, res) {
+    const allUsers = await User.find({});
+    res.json(allUsers);
+}
+
 // POST New User
 export async function postUser(req, res) {
     const username = req.body.username;
