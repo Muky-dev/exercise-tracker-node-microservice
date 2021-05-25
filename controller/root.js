@@ -33,7 +33,7 @@ export async function postExercise(req, res) {
 
     if (date) {
         try {
-            const newDate = new Date(date+"T01:00:00");
+            const newDate = new Date(date);
             formatedDate = newDate;
         } catch (error) {
             formatedDate = error
@@ -48,16 +48,16 @@ export async function postExercise(req, res) {
             duration: duration,
             date: formatedDate
         }).save();
-        console.log(newExercise);
-        res.json({
-            _id: newExercise._id,
+        const exerciseJson = {
             username: findUser.username,
-            date: new Date(newExercise.date).toDateString(),
+            description: newExercise.description,
             duration: newExercise.duration,
-            description: newExercise.description
-        });
+            _id: findUser._id,
+            date: new Date(newExercise.date).toDateString()
+        }
+        res.json(exerciseJson);
     } catch (error) {
-        res.json(error);
+        res.json(error.message);
     }
 }
 
